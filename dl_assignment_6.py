@@ -82,7 +82,7 @@ class BatchGenerator(object):
         for step in range(self._num_unrollings):
             batches.append(self._next_batch())
         self._last_batch = batches[-1]
-        return batches  # 11 x 64 x 25
+        return batches  # 11 x 64 x 27
 
 
 def characters(probabilities):
