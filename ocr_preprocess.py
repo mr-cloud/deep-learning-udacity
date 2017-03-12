@@ -6,6 +6,7 @@ import h5py
 from scipy import ndimage
 import random
 import pickle
+from matplotlib import pyplot as plt
 
 
 def maybe_extract(filename, force=False):
@@ -25,8 +26,8 @@ def maybe_extract(filename, force=False):
     print(data_folders)
     return data_folders
 
-maybe_extract('train.tar.gz')
-maybe_extract('test.tar.gz')
+# maybe_extract('train.tar.gz')
+# maybe_extract('test.tar.gz')
 
 image_size = 64  # Pixel width and height.
 pixel_depth = 255.0  # Number of levels per pixel.
@@ -134,18 +135,19 @@ def prepare_datasets(mat_file, isExtended=True):
         example_label = [num_digits]
         # print('number of digits: ' + str(num_digits))
         if num_digits == 1:
-            digit_label = int(img_meta[bbox_dataset[idx, 0]]['label'][0, 0])
+            # number '0' is represented as 10 in SVHN datasets.
+            digit_label = int(img_meta[bbox_dataset[idx, 0]]['label'][0, 0]) % 10
             example_label.append(digit_label)
         else:
             for label_idx in range(num_digits):
-                example_label.append(int(img_meta[img_meta[bbox_dataset[idx,0]]['label'][label_idx, 0]][0, 0]))
+                example_label.append(int(img_meta[img_meta[bbox_dataset[idx,0]]['label'][label_idx, 0]][0, 0]) % 10)
         example_label.extend([-1 for _ in range(RECOGNITION_LENGTH - num_digits)])  # fill '-1' with absent digits.
         labels[actual_num_imgs] = example_label
         actual_num_imgs += 1
         if isExtended:
             # crop single digit to sample more examples.
             if num_digits == 1:
-                label = [1, int(img_meta[bbox_dataset[idx, 0]]['label'][0, 0])]
+                label = [1, int(img_meta[bbox_dataset[idx, 0]]['label'][0, 0]) % 10]
                 top = img_meta[bbox_dataset[idx, 0]]['top'][0, 0]
                 left = img_meta[bbox_dataset[idx, 0]]['left'][0, 0]
                 height = img_meta[bbox_dataset[idx, 0]]['height'][0, 0]
@@ -158,7 +160,7 @@ def prepare_datasets(mat_file, isExtended=True):
 
             else:
                 for label_idx in range(num_digits):
-                    label = [1, int(img_meta[img_meta[bbox_dataset[idx,0]]['label'][label_idx, 0]][0, 0])]
+                    label = [1, int(img_meta[img_meta[bbox_dataset[idx,0]]['label'][label_idx, 0]][0, 0]) % 10]
                     top = img_meta[img_meta[bbox_dataset[idx,0]]['top'][label_idx, 0]][0, 0]
                     left = img_meta[img_meta[bbox_dataset[idx,0]]['left'][label_idx, 0]][0, 0]
                     height = img_meta[img_meta[bbox_dataset[idx,0]]['height'][label_idx, 0]][0, 0]
@@ -185,9 +187,48 @@ def pickle_dataset(pickle_file, save):
       raise
 
 
-train_datasets, train_labels = prepare_datasets('train/digitStruct.mat')
-pickle_dataset('train.pickle', {'train_datasets': train_datasets, 'train_labels': train_labels})
-del train_datasets
-del train_labels
-test_datasets, test_labels = prepare_datasets('test/digitStruct.mat', isExtended=False)
-pickle_dataset('test.pickle', {'test_datasets': test_datasets, 'test_labels': test_labels})
+# train_datasets, train_labels = prepare_datasets('train/digitStruct.mat')
+# pickle_dataset('train.pickle', {'datasets': train_datasets, 'labels': train_labels})
+# del train_datasets
+# del train_labels
+# test_datasets, test_labels = prepare_datasets('test/digitStruct.mat', isExtended=False)
+# pickle_dataset('test.pickle', {'datasets': test_datasets, 'labels': test_labels})
+# del test_datasets
+# del test_labels
+
+
+def check_dataset(pickle_file):
+    with open(pickle_file, 'rb') as f:
+        save = pickle.load(f)
+        datasets = save['datasets']
+        labels = save['labels']
+        print('dataset size: ', datasets.shape)
+        plt.figure()
+        for idx in range(3):
+            plt.imshow(datasets[75+idx])
+            print('label: ', labels[75+idx])
+            plt.show()
+
+check_dataset('mini_train.pickle')
+
+
+# create mini test dataset.
+def create_mini_dataset(ori_file, mini_file):
+    with open(ori_file, 'rb') as f:
+        save = pickle.load(f)
+        with open(mini_file, 'wb') as mini_f:
+            train_datasets = save['datasets'][:100]
+            train_labels = save['labels'][:100]
+            del save
+            mini_save = {
+                'datasets': train_datasets,
+                'labels': train_labels
+            }
+            try:
+                pickle.dump(mini_save, mini_f, pickle.HIGHEST_PROTOCOL)
+            except Exception as e:
+                print('Unable to save data to ', mini_file, ':', e)
+                raise
+
+# create_mini_dataset('train.pickle', 'mini_train.pickle')
+# create_mini_dataset('test.pickle', 'mini_test.pickle')
