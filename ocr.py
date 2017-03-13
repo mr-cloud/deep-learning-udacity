@@ -16,22 +16,31 @@ num_labels_length = 6
 num_channels = 3
 RECOGNITION_LENGTH = 5
 
-# subset_ratio = 0.1
-subset_ratio = 1.0
-with open('mini_train.pickle', 'rb') as f:
-# with open('train.pickle', 'rb') as f:
-    save = pickle.load(f)
-    train_datasets = save['datasets'][0: int(save['datasets'].shape[0] * subset_ratio)]
-    train_all_labels = save['labels'][0: int(save['labels'].shape[0] * subset_ratio)]
-    del save  # hint to help gc free up memory
 
-with open('mini_test.pickle', 'rb') as f:
-# with open('test.pickle', 'rb') as f:
-    save = pickle.load(f)
-    test_datasets = save['datasets'][0: int(save['datasets'].shape[0] * subset_ratio)]
-    test_all_labels = save['labels'][0: int(save['labels'].shape[0] * subset_ratio)]
-    del save  # hint to help gc free up memory
+def load_data(debug=True):
+    if debug:
+        subset_ratio = 1.0
+        train_file = 'mini_train.pickle'
+        test_file = 'mini_test.pickle'
+    else:
+        subset_ratio = 0.1
+        train_file = 'train.pickle'
+        test_file = 'test.pickle'
 
+    with open(train_file, 'rb') as f:
+        save = pickle.load(f)
+        train_datasets = save['datasets'][0: int(save['datasets'].shape[0] * subset_ratio)]
+        train_all_labels = save['labels'][0: int(save['labels'].shape[0] * subset_ratio)]
+        del save  # hint to help gc free up memory
+
+    with open(test_file, 'rb') as f:
+        save = pickle.load(f)
+        test_datasets = save['datasets'][0: int(save['datasets'].shape[0] * subset_ratio)]
+        test_all_labels = save['labels'][0: int(save['labels'].shape[0] * subset_ratio)]
+        del save  # hint to help gc free up memory
+    return train_datasets, train_all_labels, test_datasets, test_all_labels
+
+train_datasets, train_all_labels, test_datasets, test_all_labels = load_data(debug=False)
 
 def reformat(datasets, labels, valid_ratio=0.0):
     datasets = datasets.reshape(
@@ -125,17 +134,25 @@ with graph.as_default():
     tf_train_labels_digit3 = tf.placeholder(tf.int32, shape=(batch_size))
     tf_train_labels_digit4 = tf.placeholder(tf.int32, shape=(batch_size))
     tf_train_labels_digit5 = tf.placeholder(tf.int32, shape=(batch_size))
+    condition_0 = tf.placeholder(tf.int32, shape=[])
+    condition_1 = tf.placeholder(tf.int32, shape=[])
+    condition_2 = tf.placeholder(tf.int32, shape=[])
+    condition_3 = tf.placeholder(tf.int32, shape=[])
+    condition_4 = tf.placeholder(tf.int32, shape=[])
+    condition_5 = tf.placeholder(tf.int32, shape=[])
 
     tf_valid_dataset = tf.constant(valid_dataset)
     tf_test_dataset = tf.constant(test_dataset)
+
+    no_loss = tf.constant(0.0)
 
     # dropout
     keep_prob = tf.placeholder(tf.float32)
 
     # learning rate decay
     global_step = tf.Variable(0)  # count the number of steps taken.
-    initial_learning_rate = 0.5
-    final_learning_rate = 0.01
+    initial_learning_rate = 0.001
+    final_learning_rate = 0.0001
     decay_rate = 0.96
     learning_rate = tf.train.exponential_decay(initial_learning_rate, global_step, decay_rate=decay_rate,
                                                decay_steps=num_steps / (
@@ -281,62 +298,62 @@ with graph.as_default():
             conv_output, f6_weights_length, f6_biases_length, f7_weights_length, f7_biases_length, \
             read_out_weights_length, read_out_biases_length
         )
-    loss_length = tf.reduce_mean(
+    loss_length = tf.cond(tf.equal(condition_2, 1), lambda: no_loss, lambda: tf.reduce_mean(
         tf.nn.sparse_softmax_cross_entropy_with_logits(
             logits=tf.boolean_mask(logits_length, tf.not_equal(tf_train_labels_length, -1)),
             labels=tf.boolean_mask(tf_train_labels_length, tf.not_equal(tf_train_labels_length, -1)),
         )
-    )
+    ))
     logits_digit_1 = classifier_model(
             conv_output, f6_weights_digit_1, f6_biases_digit_1, f7_weights_digit_1, f7_biases_digit_1,\
             read_out_weights_digit_1, read_out_biases_digit_1
         )
-    loss_digit_1 = tf.reduce_mean(
+    loss_digit_1 = tf.cond(tf.equal(condition_2, 1), lambda: no_loss, lambda: tf.reduce_mean(
         tf.nn.sparse_softmax_cross_entropy_with_logits(
             logits=tf.boolean_mask(logits_digit_1, tf.not_equal(tf_train_labels_digit1, -1)),
             labels=tf.boolean_mask(tf_train_labels_digit1, tf.not_equal(tf_train_labels_digit1, -1)),
         )
-    )
+    ))
     logits_digit_2 = classifier_model(
             conv_output, f6_weights_digit_2, f6_biases_digit_2, f7_weights_digit_2, f7_biases_digit_2,\
             read_out_weights_digit_2, read_out_biases_digit_2
         )
-    loss_digit_2 = tf.reduce_mean(
+    loss_digit_2 = tf.cond(tf.equal(condition_2, 1), lambda: no_loss, lambda: tf.reduce_mean(
         tf.nn.sparse_softmax_cross_entropy_with_logits(
             logits=tf.boolean_mask(logits_digit_2, tf.not_equal(tf_train_labels_digit2, -1)),
             labels=tf.boolean_mask(tf_train_labels_digit2, tf.not_equal(tf_train_labels_digit2, -1)),
         )
-    )
+    ))
     logits_digit_3 = classifier_model(
             conv_output, f6_weights_digit_3, f6_biases_digit_3, f7_weights_digit_3, f7_biases_digit_3,\
             read_out_weights_digit_3, read_out_biases_digit_3
         )
-    loss_digit_3 = tf.reduce_mean(
+    loss_digit_3 = tf.cond(tf.equal(condition_3, 1), lambda: no_loss, lambda: tf.reduce_mean(
         tf.nn.sparse_softmax_cross_entropy_with_logits(
             logits=tf.boolean_mask(logits_digit_3, tf.not_equal(tf_train_labels_digit3, -1)),
             labels=tf.boolean_mask(tf_train_labels_digit3, tf.not_equal(tf_train_labels_digit3, -1)),
         )
-    )
+    ))
     logits_digit_4 = classifier_model(
             conv_output, f6_weights_digit_4, f6_biases_digit_4, f7_weights_digit_4, f7_biases_digit_4,\
             read_out_weights_digit_4, read_out_biases_digit_4
         )
-    loss_digit_4 = tf.reduce_mean(
+    loss_digit_4 = tf.cond(tf.equal(condition_4, 1), lambda: no_loss, lambda: tf.reduce_mean(
         tf.nn.sparse_softmax_cross_entropy_with_logits(
             logits=tf.boolean_mask(logits_digit_4, tf.not_equal(tf_train_labels_digit4, -1)),
             labels=tf.boolean_mask(tf_train_labels_digit4, tf.not_equal(tf_train_labels_digit4, -1)),
         )
-    )
+    ))
     logits_digit_5 = classifier_model(
             conv_output, f6_weights_digit_5, f6_biases_digit_5, f7_weights_digit_5, f7_biases_digit_5,\
             read_out_weights_digit_5, read_out_biases_digit_5
         )
-    loss_digit_5 = tf.reduce_mean(
+    loss_digit_5 = tf.cond(tf.equal(condition_5, 1), lambda: no_loss, lambda: tf.reduce_mean(
         tf.nn.sparse_softmax_cross_entropy_with_logits(
             logits=tf.boolean_mask(logits_digit_5, tf.not_equal(tf_train_labels_digit5, -1)),
             labels=tf.boolean_mask(tf_train_labels_digit5, tf.not_equal(tf_train_labels_digit5, -1)),
         )
-    )
+    ))
     loss = tf.reduce_mean(loss_length + loss_digit_1 + loss_digit_2 + loss_digit_3 + loss_digit_4 + loss_digit_5)
     
     # optimizer
@@ -408,11 +425,36 @@ with graph.as_default():
             offset = (step * batch_size) % (train_dataset.shape[0] - batch_size)
             batch_data = train_dataset[offset:(offset + batch_size), :, :, :]
             batch_labels_length = train_labels[offset:(offset + batch_size), 0]
+            if np.sum(batch_labels_length == -1) == batch_size:
+                condition0 = 1
+            else:
+                condition0 = 0
             batch_labels_digit_1 = train_labels[offset:(offset + batch_size), 1]
+            if np.sum(batch_labels_digit_1 == -1) == batch_size:
+                condition1 = 1
+            else:
+                condition1 = 0
             batch_labels_digit_2 = train_labels[offset:(offset + batch_size), 2]
+            if np.sum(batch_labels_digit_2 == -1) == batch_size:
+                condition2 = 1
+            else:
+                condition2 = 0
             batch_labels_digit_3 = train_labels[offset:(offset + batch_size), 3]
+            if np.sum(batch_labels_digit_3 == -1) == batch_size:
+                condition3 = 1
+            else:
+                condition3 = 0
             batch_labels_digit_4 = train_labels[offset:(offset + batch_size), 4]
+            if np.sum(batch_labels_digit_4 == -1) == batch_size:
+                condition4 = 1
+            else:
+                condition4 = 0
             batch_labels_digit_5 = train_labels[offset:(offset + batch_size), 5]
+            if np.sum(batch_labels_digit_5 == -1) == batch_size:
+                condition5 = 1
+            else:
+                condition5 = 0
+            print('conditions: ', condition0, condition1, condition2, condition3, condition4, condition5)
             feed_dict = {tf_train_dataset: batch_data,
                          tf_train_labels_length: batch_labels_length,
                          tf_train_labels_digit1: batch_labels_digit_1,
@@ -420,12 +462,19 @@ with graph.as_default():
                          tf_train_labels_digit3: batch_labels_digit_3,
                          tf_train_labels_digit4: batch_labels_digit_4,
                          tf_train_labels_digit5: batch_labels_digit_5,
-                         keep_prob: 0.5
+                         keep_prob: 0.5,
+                         condition_0: condition0,
+                         condition_1: condition1,
+                         condition_2: condition2,
+                         condition_3: condition3,
+                         condition_4: condition4,
+                         condition_5: condition5
                          }
             # run session
             _, l, log_predictions_length, log_predictions_digit_1,\
                 log_predictions_digit_2, log_predictions_digit_3,\
-                log_predictions_digit_4, log_predictions_digit_5\
+                log_predictions_digit_4, log_predictions_digit_5,\
+                loss_L, loss_1, loss_2, loss_3, loss_4, loss_5\
                 = session.run(
                         [optimizer, loss,
                          log_train_prediction_length,
@@ -434,7 +483,15 @@ with graph.as_default():
                          log_train_prediction_digit_3,
                          log_train_prediction_digit_4,
                          log_train_prediction_digit_5,
+                         loss_length,
+                         loss_digit_1,
+                         loss_digit_2,
+                         loss_digit_3,
+                         loss_digit_4,
+                         loss_digit_5
                          ], feed_dict=feed_dict)
+            print('loss_L %s. loss_1 %s, loss_2 %s, loss_3 %s, loss_4 %s, loss_5 %s'
+                  % (loss_L, loss_1, loss_2, loss_3, loss_4, loss_5))
             # cross validation and report
             if step % 50 == 0:
                 print('learning rate:', learning_rate.eval())
