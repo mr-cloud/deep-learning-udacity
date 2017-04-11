@@ -172,7 +172,7 @@ with graph.as_default():
 
 
     # Definition of the cell computation.
-    def lstm_cell(i, o, state):
+    def lstm_cell(i, o, state):  # o <=>
         """Create a LSTM cell. See e.g.: http://arxiv.org/pdf/1402.1128v1.pdf
         Note that in this formulation, we omit the various connections between the
         previous state and the gates."""
@@ -181,7 +181,7 @@ with graph.as_default():
         update = tf.matmul(i, cx) + tf.matmul(o, cm) + cb
         state = forget_gate * state + input_gate * tf.tanh(update)  # input with tanh, element-wise matrix multiplying.
         output_gate = tf.sigmoid(tf.matmul(i, ox) + tf.matmul(o, om) + ob)  # LG
-        return output_gate * tf.tanh(state), state  # output with tanh
+        return output_gate * tf.tanh(state), state  # output with tanh, <output, future>
 
 
     # Input data.
