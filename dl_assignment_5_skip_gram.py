@@ -84,10 +84,17 @@ data_index = 0
 
 
 def generate_batch(batch_size, num_skips, skip_window):
+    """
+
+    :param batch_size:
+    :param num_skips: decide the number of samples in each span.
+    :param skip_window:
+    :return: example: <word, context>
+    """
     global data_index
     assert batch_size % num_skips == 0  # trigger a warning if false.
-    assert num_skips <= 2 * skip_window  # make sure the samples are within the span.
-    #  The bigger num_skips, the less stronger context.
+    assert num_skips <= 2 * skip_window  # make sure the samples are within the span to build stronger context.
+    #  The bigger num_skips, the weaker context.
     batch = np.ndarray(shape=(batch_size), dtype=np.int32)
     labels = np.ndarray(shape=(batch_size, 1), dtype=np.int32)
     span = 2 * skip_window + 1  # [ skip_window target skip_window ]
