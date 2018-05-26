@@ -19,7 +19,7 @@
     * Skip-gram model of Word2Vec.
 
 6. dl_assignment_5_CBOW.py
-    * CBOW model of Word2Vec.
+    * CBOW model of Word2Vec. word -> context
 
 7. dl_assignment_6.py
-    * RNN with LSTM.
+    * RNN with LSTM. context -> word

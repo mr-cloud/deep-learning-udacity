@@ -156,7 +156,7 @@ with graph.as_default(), tf.device('/cpu:0'):
 
     # Model.
     # Look up embeddings for inputs.
-    embed = tf.nn.embedding_lookup(embeddings, train_dataset)  # pick up vector with partition.
+    embed = tf.nn.embedding_lookup(embeddings, train_dataset)  # pick up vector with partition. shape=(batch_size, embedding_size)
     # Compute the softmax loss, using a sample of the negative labels each time.
     # train the parameters to make the vectors which context is similar have the same vectorization result.
     loss = tf.reduce_mean(
@@ -179,7 +179,7 @@ with graph.as_default(), tf.device('/cpu:0'):
         normalized_embeddings, valid_dataset)
     #
     similarity = tf.matmul(valid_embeddings,
-                           tf.transpose(normalized_embeddings))  # cosine similarity between the two vectors.
+                           tf.transpose(normalized_embeddings))  # cosine similarity between the two vectors. shape=(num_examples, vocabulary_size): A[i ,j] means similarity between word i and word j.
 
     num_steps = 100001
 
@@ -205,7 +205,7 @@ with graph.as_default(), tf.device('/cpu:0'):
                 for i in range(valid_size):
                     valid_word = reverse_dictionary[valid_examples[i]]
                     top_k = 8  # number of nearest neighbors
-                    # the first element in the ordered sim mst be the example itselt cause the angle is 0 degree.
+                    # the first element in the ordered sim mst be the example itself cause the angle is 0 degree.
                     nearest = (-sim[i, :]).argsort()[
                               1:top_k + 1]  # the larger, the closer which means the angle is smaller.
                     log = 'Nearest to %s:' % valid_word
